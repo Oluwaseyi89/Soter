@@ -122,12 +122,25 @@ Soter uses a monorepo under the `app` parent folder for streamlined development:
 
 2. **Run Locally**  
    ```bash
+   # From monorepo root (app/)
+   cd app
    # Backend
    pnpm --filter backend run start:dev
 
-   # Frontend
-   pnpm --filter frontend run dev  # http://localhost:3000
+   # Frontend (Next.js on port 3000)
+   pnpm --filter frontend dev
+   # Or: cd frontend && pnpm dev
 
+   # Backend (NestJS on port 4000)
+   pnpm --filter backend start:dev
+   # Or: cd backend && pnpm start:dev
+
+   # Contracts (in another terminal)
+   cd soroban && soroban contract invoke ...  # For testing
+
+   # Health checks
+   # Frontend: http://localhost:3000/api/health
+   # Backend: http://localhost:4000/health
    # Mobile (requires backend running)
    pnpm --filter mobile start
    ```
