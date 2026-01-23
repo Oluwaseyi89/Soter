@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -6,6 +6,8 @@ import { AidModule } from './aid/aid.module';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { VerificationModule } from './verification/verification.module';
+import { LoggerModule } from './logger/logger.module';
+import { RequestCorrelationMiddleware } from './middleware/request-correlation.middleware';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -24,6 +26,7 @@ import { join } from 'node:path';
         return existing.length > 0 ? existing : candidates;
       })(),
     }),
+    LoggerModule,
     PrismaModule,
     HealthModule,
     AidModule,
@@ -32,4 +35,8 @@ import { join } from 'node:path';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestCorrelationMiddleware).forRoutes('*');
+  }
+}
