@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 export class HealthService {
   constructor(private readonly configService: ConfigService) {}
 
-  getHealth() {
+  check() {
     const version = process.env.npm_package_version ?? '0.0.0';
 
     return {
