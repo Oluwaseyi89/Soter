@@ -23,6 +23,18 @@ class HumanitarianVerificationService:
     def __init__(self):
         self.prompt_engine = HumanitarianPromptEngine()
         self.test_provider = TestProvider()
+        self.breakers = {
+            "openai": CircuitBreaker(
+                name="openai",
+                failure_threshold=settings.circuit_breaker_failure_threshold,
+                recovery_timeout=settings.circuit_breaker_recovery_timeout_seconds,
+            ),
+            "groq": CircuitBreaker(
+                name="groq",
+                failure_threshold=settings.circuit_breaker_failure_threshold,
+                recovery_timeout=settings.circuit_breaker_recovery_timeout_seconds,
+            ),
+        }
 
     def verify_claim(
         self,
@@ -30,6 +42,7 @@ class HumanitarianVerificationService:
         supporting_evidence: Optional[List[str]] = None,
         context_factors: Optional[Dict[str, Any]] = None,
         provider_preference: str = "auto",
+        timeout: Optional[float] = None,
     ) -> Dict[str, Any]:
         start_time = time.time()
         try:
@@ -68,6 +81,7 @@ class HumanitarianVerificationService:
                             model=model,
                             system_prompt=prompt["system"],
                             user_prompt=prompt["user"],
+                            timeout=timeout,
                         )
                         parsed = self._parse_json_response(raw_content)
                         return {
@@ -112,16 +126,23 @@ class HumanitarianVerificationService:
             return settings.groq_model
         raise ValueError(f"Unsupported provider: {provider}")
 
-    def _call_provider(self, provider: str, model: str, system_prompt: str, user_prompt: str) -> str:
+    def _call_provider(
+        self,
+        provider: str,
+        model: str,
+        system_prompt: str,
+        user_prompt: str,
+        timeout: Optional[float] = None,
+    ) -> str:
         if provider == "test":
             return self._call_test(model, system_prompt, user_prompt)
         if provider == "openai":
-            return self._call_openai(model, system_prompt, user_prompt)
+            return self._call_openai(model, system_prompt, user_prompt, timeout)
         if provider == "groq":
-            return self._call_groq(model, system_prompt, user_prompt)
+            return self._call_groq(model, system_prompt, user_prompt, timeout)
         raise ValueError(f"Unsupported provider: {provider}")
 
-    def _call_openai(self, model: str, system_prompt: str, user_prompt: str) -> str:
+    def _call_openai(self, model: str, system_prompt: str, user_prompt: str, timeout: Optional[float] = None) -> str:
         if not settings.openai_api_key:
             raise RuntimeError("OpenAI API key is not configured")
 
@@ -131,9 +152,10 @@ class HumanitarianVerificationService:
             model=model,
             system_prompt=system_prompt,
             user_prompt=user_prompt,
+            timeout=timeout,
         )
 
-    def _call_groq(self, model: str, system_prompt: str, user_prompt: str) -> str:
+    def _call_groq(self, model: str, system_prompt: str, user_prompt: str, timeout: Optional[float] = None) -> str:
         if not settings.groq_api_key:
             raise RuntimeError("Groq API key is not configured")
 
@@ -143,6 +165,7 @@ class HumanitarianVerificationService:
             model=model,
             system_prompt=system_prompt,
             user_prompt=user_prompt,
+            timeout=timeout,
         )
 
     def _call_chat_completion_api(
@@ -152,6 +175,7 @@ class HumanitarianVerificationService:
         model: str,
         system_prompt: str,
         user_prompt: str,
+        timeout: Optional[float] = None,
     ) -> str:
         if settings.ai_deterministic_mode:
             logger.info("Deterministic AI mode enabled: returning stable response")
@@ -171,9 +195,9 @@ class HumanitarianVerificationService:
             "Content-Type": "application/json",
         }
 
-        timeout = float(settings.llm_timeout_seconds)
+        effective_timeout = timeout if timeout is not None else float(settings.llm_timeout_seconds)
 
-        with httpx.Client(timeout=timeout) as client:
+        with httpx.Client(timeout=effective_timeout) as client:
             response = client.post(base_url, json=payload, headers=headers)
             response.raise_for_status()
             data = response.json()
