@@ -310,13 +310,7 @@ describe('VerificationService', () => {
       expect(riskLevels).toBeDefined();
     });
 
-    it('should have valid fixture scores in test mode', async () => {
-      jest
-        .spyOn(prismaService.claim, 'findUnique')
-        .mockResolvedValue(mockClaim);
-      jest
-        .spyOn(prismaService.claim, 'update')
-        .mockResolvedValue({ ...mockClaim, status: ClaimStatus.verified });
+    it('should have valid fixture scores in test mode', () => {
 
       // Verify all fixtures produce valid scores
       const fixtures = (service as any)._fixtures as any[];
