@@ -447,7 +447,7 @@ export class EntityLinkingService {
   private async findBestRegistryMatch(
     entityType: string,
     name: string,
-    minConfidence: number,
+    _minConfidence: number,
   ): Promise<{ id: string; confidenceScore: number } | null> {
     // Exact match first
     switch (entityType) {
