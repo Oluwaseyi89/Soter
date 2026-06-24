@@ -51,6 +51,10 @@ class Settings(BaseSettings):
     circuit_breaker_failure_threshold: int = 3
     circuit_breaker_recovery_timeout_seconds: float = 30.0
 
+    # Load shedding settings
+    load_shed_memory_threshold_percent: float = 90.0
+    load_shed_max_celery_queue_depth: int = 100
+
     # Application settings
     app_env: Literal["development", "staging", "production", "test"] = "development"
     log_level: str = "INFO"
