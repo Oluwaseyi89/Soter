@@ -281,7 +281,7 @@ export class AidEscrowService {
    */
   async getTransactionStatus(
     hash: string,
-  ): Promise<GetTransactionStatusResult> {
+  ): Promise<GetTransactionStatusResult & { explorerUrl?: string }> {
     this.logger.debug('Getting transaction status:', { hash });
 
     const result = await this.onchainAdapter.getTransactionStatus({ hash });

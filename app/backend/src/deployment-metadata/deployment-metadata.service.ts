@@ -34,7 +34,7 @@ export class DeploymentMetadataService {
         deployer: dto.deployer ?? null,
         transactionHash: dto.transactionHash ?? null,
         // Use Prisma.DbNull instead of standard null variables for Json fields
-        metadata: dto.metadata ?? Prisma.DbNull,
+        metadata: (dto.metadata as Prisma.InputJsonValue) ?? Prisma.DbNull,
       },
     });
 
@@ -115,7 +115,7 @@ export class DeploymentMetadataService {
         deployer: dto.deployer,
         transactionHash: dto.transactionHash,
         // Ensure explicit fallback behavior for Json type check compliance
-        metadata: dto.metadata === null ? Prisma.DbNull : dto.metadata,
+        metadata: dto.metadata === null ? Prisma.DbNull : (dto.metadata as Prisma.InputJsonValue | undefined),
       },
     });
 

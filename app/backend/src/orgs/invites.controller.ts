@@ -31,7 +31,7 @@ export class InvitesController {
       orgId,
       email: body.email,
       role: body.role,
-      createdBy: req.user.id || req.user.apiKeyId || 'system',
+      createdBy: req.user?.id || req.user?.apiKeyId || 'system',
     });
   }
 
@@ -53,7 +53,7 @@ export class InvitesController {
   ) {
     return this.invitesService.revokeInvite(
       inviteId,
-      req.user.id || req.user.apiKeyId || 'system',
+      req.user?.id || req.user?.apiKeyId || 'system',
     );
   }
 
