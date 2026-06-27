@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Query,
-  Res,
-  UseInterceptors,
-  Version,
-} from '@nestjs/common';
+import { Controller, Get, Query, Res, Version } from '@nestjs/common';
 import { Response } from 'express';
 import { AuditService, AuditQuery, ExportAuditQuery } from './audit.service';
 import {
@@ -16,13 +9,11 @@ import {
   ApiUnauthorizedResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { MetricsInterceptor } from '../metrics/metrics.interceptor';
 import { MetricsService } from '../metrics/metrics.service';
 
 @ApiTags('Audit')
 @ApiBearerAuth('JWT-auth')
 @Controller('audit')
-@UseInterceptors(MetricsInterceptor)
 export class AuditController {
   constructor(
     private readonly auditService: AuditService,
@@ -149,6 +140,7 @@ export class AuditController {
   @ApiOkResponse({ description: 'Prometheus metrics exported successfully.' })
   async getMetrics(@Res() res: Response) {
     res.set('Content-Type', 'text/plain');
-    res.send(await this.metricsService.getMetrics());
+    const metrics = await this.metricsService.getMetrics();
+    res.send(metrics);
   }
 }
