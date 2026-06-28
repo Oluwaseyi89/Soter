@@ -8,7 +8,7 @@ import {
 import { ConfigType } from '@nestjs/config';
 import { Request } from 'express';
 import * as crypto from 'crypto';
-import appConfig from '../config/config';
+import appConfig from '../../config/config';
 
 interface RequestWithRawBody extends Request {
   rawBody?: Buffer;
