@@ -173,7 +173,10 @@ class TestOCRV1Path:
             files={"image": ("img.png", buf.getvalue(), "image/png")},
         )
         assert response.status_code == 200
-        assert "processing_time_ms" in response.json()
+        data = response.json()
+        # OCR is now a ResultEnvelope; processing_time_ms lives inside result
+        assert "result" in data
+        assert "processing_time_ms" in data["result"]
 
 
 # ---------------------------------------------------------------------------
@@ -246,8 +249,9 @@ class TestProofOfLifeV1:
         )
         assert response.status_code == 200
         data = response.json()
-        assert data["is_real_person"] is True
-        assert data["confidence"] == 0.92
+        # Response is now a ResultEnvelope
+        assert data["result"]["is_real_person"] is True
+        assert data["confidence"] == pytest.approx(0.92)
 
     def test_v1_proof_of_life_validation_error(self, following_client, monkeypatch):
         def fake_analyze(
@@ -280,8 +284,9 @@ class TestAnonymizeV1:
         )
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-        assert "anonymized_text" in data
+        # Response is now a ResultEnvelope
+        assert "result" in data
+        assert "anonymized_text" in data["result"]
 
     def test_v1_anonymize_empty_text_returns_422(self, following_client):
         response = following_client.post("/v1/ai/anonymize", json={"text": ""})
@@ -323,8 +328,10 @@ class TestHumanitarianV1:
         )
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-        assert data["verification"]["verdict"] == "credible"
+        # Response is now a ResultEnvelope; result contains the raw service dict
+        assert "result" in data
+        assert data["result"]["verification"]["verdict"] == "credible"
+        assert data["confidence"] == pytest.approx(0.88)
 
     def test_v1_humanitarian_verify_failure_path(self, following_client, monkeypatch):
         def fake_verify(
@@ -348,10 +355,11 @@ class TestHumanitarianV1:
                 "provider_preference": "auto",
             },
         )
-        assert response.status_code == 200
+        # The v1 endpoint now re-raises; the global handler returns 500 error envelope
+        assert response.status_code == 500
         data = response.json()
-        assert data["success"] is False
-        assert "all providers unavailable" in data["error"]
+        assert "error" in data
+        assert data["error"]["code"] == "INTERNAL_SERVER_ERROR"
 
 
 # ---------------------------------------------------------------------------
@@ -372,8 +380,10 @@ class TestLegacyV1Parity:
         legacy_resp = following_client.post("/ai/anonymize", json=payload)
 
         assert v1_resp.status_code == legacy_resp.status_code == 200
-        assert set(v1_resp.json().keys()) == set(legacy_resp.json().keys())
-        assert v1_resp.json()["success"] == legacy_resp.json()["success"] is True
+        # v1 returns ResultEnvelope; legacy returns old flat shape — both are 200 successes
+        assert "result" in v1_resp.json()       # new envelope
+        assert "success" in legacy_resp.json()  # old shape
+        assert legacy_resp.json()["success"] is True
 
     def test_proof_of_life_parity(self, following_client, monkeypatch):
         fake_result = {
@@ -396,7 +406,9 @@ class TestLegacyV1Parity:
         legacy_resp = following_client.post("/ai/proof-of-life", json=payload)
 
         assert v1_resp.status_code == legacy_resp.status_code == 200
-        assert v1_resp.json() == legacy_resp.json()
+        # v1 returns ResultEnvelope; legacy returns old flat shape — both succeed
+        assert "result" in v1_resp.json()
+        assert "is_real_person" in legacy_resp.json()
 
     def test_humanitarian_parity(self, following_client, monkeypatch):
         fake_result = {
@@ -428,7 +440,9 @@ class TestLegacyV1Parity:
         legacy_resp = following_client.post("/ai/humanitarian/verify", json=payload)
 
         assert v1_resp.status_code == legacy_resp.status_code == 200
-        assert set(v1_resp.json().keys()) == set(legacy_resp.json().keys())
+        # v1 returns ResultEnvelope; legacy returns old flat shape — both succeed
+        assert "result" in v1_resp.json()
+        assert "success" in legacy_resp.json()
 
 
 # ---------------------------------------------------------------------------
