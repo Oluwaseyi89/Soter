@@ -421,9 +421,11 @@ class TestLegacyV1Parity:
         legacy_resp = following_client.post("/ai/proof-of-life", json=payload)
 
         assert v1_resp.status_code == legacy_resp.status_code == 200
-        # Both return ResultEnvelope now
-        assert v1_resp.json() == legacy_resp.json()
-        assert "result" in v1_resp.json()
+        # Both return ResultEnvelope; trace_id differs per request so exclude it
+        v1_data = {k: v for k, v in v1_resp.json().items() if k != "trace_id"}
+        leg_data = {k: v for k, v in legacy_resp.json().items() if k != "trace_id"}
+        assert v1_data == leg_data
+        assert "result" in v1_data
 
     def test_humanitarian_parity(self, following_client, monkeypatch):
         fake_result = {
@@ -455,9 +457,11 @@ class TestLegacyV1Parity:
         legacy_resp = following_client.post("/ai/humanitarian/verify", json=payload)
 
         assert v1_resp.status_code == legacy_resp.status_code == 200
-        # Both return ResultEnvelope now
-        assert v1_resp.json() == legacy_resp.json()
-        assert "result" in v1_resp.json()
+        # Both return ResultEnvelope; trace_id differs per request so exclude it
+        v1_data = {k: v for k, v in v1_resp.json().items() if k != "trace_id"}
+        leg_data = {k: v for k, v in legacy_resp.json().items() if k != "trace_id"}
+        assert v1_data == leg_data
+        assert "result" in v1_data
 
 
 # ---------------------------------------------------------------------------
